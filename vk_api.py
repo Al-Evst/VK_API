@@ -15,29 +15,27 @@ def shorten_link(token, link):
     response = requests.get(api_url, params=params)
     response.raise_for_status()
 
-    response_data = response.json()
-
-    if 'response' in response_data and 'short_url' in response_data['response']:
-        return response_data['response']['short_url']
-    else:
-        raise ValueError("Ошибка: не удалось сократить ссылку.")
+    if not 'error' in response.json():
+        return response.json()['response']['short_url']
+    
+    raise ValueError("Ошибка: не удалось сократить ссылку.")
 
 
 def count_clicks(token, short_url, access_key):
     api_url = 'https://api.vk.ru/method/utils.getLinkStats'
 
     parsed_url = urlparse(short_url)
-    path_parts = parsed_url.path.split('/')
+    path_parts = parsed_url.path[1:]
 
     if len(path_parts) < 2:
         raise ValueError("Ошибка: недействительная сокращенная ссылка.")
 
-    key = path_parts[1]
+    
 
     params = {
         'access_token': token,
         'v': '5.199',
-        'key': key,
+        'key': path_parts,
         'access_key': access_key,
         'interval': 'forever'
     }
@@ -45,30 +43,27 @@ def count_clicks(token, short_url, access_key):
     response = requests.get(api_url, params=params)
     response.raise_for_status()
 
-    response_json = response.json()
-
-    if 'response' in response_json and 'stats' in response_json['response'] and len(response_json['response']['stats']) > 0:
-        clicks_count = response_json['response']['stats'][0]['views']
-        return clicks_count
-    else:
-        raise ValueError("Ошибка: не удалось получить количество кликов.")
+    if not 'error' in response.json():
+        return response.json()['response']['stats'][0]['views']
+    
+    raise ValueError("Ошибка: не удалось получить количество кликов.")
 
 
 def is_shorten_link(token, url, access_key):
     api_url = 'https://api.vk.ru/method/utils.getLinkStats'
     
     parsed_url = urlparse(url)
-    path_parts = parsed_url.path.split('/')
+    path_parts = parsed_url.path[1:]
 
     if len(path_parts) < 2:
         return False  
 
-    key = path_parts[1]
+   
 
     params = {
         'access_token': token,
         'v': '5.199',
-        'key': key,
+        'key': path_parts,
         'access_key': access_key,
         'interval': 'forever'
     }
@@ -76,9 +71,7 @@ def is_shorten_link(token, url, access_key):
     response = requests.get(api_url, params=params)
     response.raise_for_status()
 
-    response_json = response.json()
-
-    return 'response' in response_json and 'stats' in response_json['response']
+    return not 'error' in response.json()
 
 
 def main():
