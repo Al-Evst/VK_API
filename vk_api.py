@@ -2,6 +2,7 @@ import requests
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse
+import argparse
 
 
 def shorten_link(token, link):
@@ -30,8 +31,6 @@ def count_clicks(token, short_url, access_key):
     if len(path_parts) < 2:
         raise ValueError("Ошибка: недействительная сокращенная ссылка.")
 
-    
-
     params = {
         'access_token': token,
         'v': '5.199',
@@ -58,8 +57,6 @@ def is_shorten_link(token, url, access_key):
     if len(path_parts) < 2:
         return False  
 
-   
-
     params = {
         'access_token': token,
         'v': '5.199',
@@ -75,25 +72,36 @@ def is_shorten_link(token, url, access_key):
 
 
 def main():
+    
     load_dotenv()
 
-    token = os.environ['VK_ACCESS_TOKEN']
-    access_key = os.environ['ACCESS_KEY']
+    token = os.environ.get('VK_ACCESS_TOKEN')
+    access_key = os.environ.get('ACCESS_KEY')
 
     if not (token and access_key):
         print("Ошибка: токен или access_key не найдены.")
         return
 
-    url = input("Введите ссылку для сокращения: ")
+    
+    parser = argparse.ArgumentParser(description="Сокращение и отслеживание ссылок VK.")
+    parser.add_argument('url', type=str, help="Ссылка для сокращения или для проверки кликов")
+    parser.add_argument('--clicks', action='store_true', help="Получить количество кликов по сокращенной ссылке")
+
+    args = parser.parse_args()
+
+    url = args.url
 
     try:
-        if is_shorten_link(token, url, access_key):
-            clicks = count_clicks(token, url, access_key)  
-            print(f'Количество кликов: {clicks}')
+        if args.clicks:
+            if is_shorten_link(token, url, access_key):
+                clicks = count_clicks(token, url, access_key)
+                print(f'Количество кликов: {clicks}')
+            else:
+                print("Ошибка: указанная ссылка не является сокращенной.")
         else:
-            short_link = shorten_link(token, url)  
+            short_link = shorten_link(token, url)
             print(f'Сокращенная ссылка: {short_link}')
-
+    
     except requests.exceptions.RequestException as e:
         print(f"Ошибка запроса: {e}")
     except ValueError as e:
